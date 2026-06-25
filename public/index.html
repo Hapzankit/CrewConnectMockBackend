@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrewConnect Mock Admin Panel</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1419; color: #e7e9ea; min-height: 100vh; }
+    
+    .header { background: #1a1f2e; border-bottom: 1px solid #2f3542; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+    .header h1 { font-size: 20px; font-weight: 600; }
+    .header .badge { background: #22c55e; color: #000; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+    
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    
+    .section { background: #1a1f2e; border: 1px solid #2f3542; border-radius: 12px; margin-bottom: 24px; overflow: hidden; }
+    .section-header { padding: 16px 20px; border-bottom: 1px solid #2f3542; display: flex; justify-content: space-between; align-items: center; }
+    .section-header h2 { font-size: 16px; font-weight: 600; }
+    .section-body { padding: 20px; }
+    
+    .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-danger { background: #ef4444; color: #fff; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .form-row:last-child { margin-bottom: 0; }
+    input, select { background: #0f1419; border: 1px solid #2f3542; color: #e7e9ea; padding: 8px 12px; border-radius: 8px; font-size: 13px; }
+    input:focus, select:focus { outline: none; border-color: #3b82f6; }
+    input::placeholder { color: #6b7280; }
+    
+    .table { width: 100%; border-collapse: collapse; }
+    .table th, .table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #2f3542; font-size: 13px; }
+    .table th { color: #9ca3af; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .table tr:last-child td { border-bottom: none; }
+    
+    .role-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .role-trainer { background: #7c3aed22; color: #a78bfa; border: 1px solid #7c3aed44; }
+    .role-trainee { background: #3b82f622; color: #93c5fd; border: 1px solid #3b82f644; }
+    .role-observer { background: #6b728022; color: #9ca3af; border: 1px solid #6b728044; }
+    
+    .status-open { color: #22c55e; }
+    .status-closed { color: #ef4444; }
+    
+    .empty { color: #6b7280; font-style: italic; padding: 20px; text-align: center; }
+    
+    .event-card { cursor: pointer; transition: background 0.15s; }
+    .event-card:hover { background: #2f354222; }
+    .event-card.selected { background: #3b82f615; }
+    
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #1a1f2e; border: 1px solid #2f3542; padding: 12px 20px; border-radius: 8px; font-size: 13px; display: none; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    .toast.show { display: block; animation: fadeIn 0.2s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .log-panel { background: #0a0e13; border: 1px solid #2f3542; border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px; color: #9ca3af; }
+    .log-entry { margin-bottom: 4px; }
+    .log-entry .code { color: #fbbf24; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>CrewConnect Mock Admin</h1>
+  <span class="badge">RUNNING</span>
+</div>
+
+<div class="container">
+  <!-- Events Section -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Training Events</h2>
+      <button class="btn btn-primary" onclick="showAddEvent()">+ Add Event</button>
+    </div>
+    <div class="section-body">
+      <div id="addEventForm" style="display:none; margin-bottom: 16px;">
+        <div class="form-row">
+          <input type="text" id="newEventName" placeholder="Event Name" style="flex:2">
+          <select id="newEventType">
+            <option value="multiplayer">Multiplayer</option>
+            <option value="single">Single</option>
+          </select>
+          <input type="number" id="newMaxTrainers" placeholder="Trainers" value="1" style="width:80px">
+          <input type="number" id="newMaxTrainees" placeholder="Trainees" value="3" style="width:80px">
+          <button type="button" class="btn btn-primary" id="createEventBtn">Create</button>
+        </div>
+      </div>
+      <table class="table">
+        <thead>
+          <tr><th>Event Name</th><th>Type</th><th>Status</th><th>Slots</th><th>Attendees</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="eventsTableBody">
+        </tbody>
+      </table>
+      <div id="eventsEmpty" class="empty">No events yet. Create one above.</div>
+    </div>
+  </div>
+
+  <!-- Attendees Section -->
+  <div class="section" id="attendeesSection" style="display:none;">
+    <div class="section-header">
+      <h2>Attendees — <span id="selectedEventName"></span></h2>
+      <button class="btn btn-primary" onclick="showAddAttendee()">+ Add Attendee</button>
+    </div>
+    <div class="section-body">
+      <div id="addAttendeeForm" style="display:none; margin-bottom: 16px;">
+        <div class="form-row">
+          <input type="text" id="newAttendeeName" placeholder="Full Name" style="flex:1.5">
+          <input type="text" id="newAttendeeCompany" placeholder="Company" style="flex:1">
+          <input type="text" id="newAttendeeCrew" placeholder="Crew" style="flex:0.7">
+          <select id="newAttendeeRole">
+            <option value="trainer">Trainer</option>
+            <option value="trainee">Trainee</option>
+            <option value="observer">Observer</option>
+          </select>
+          <input type="text" id="newAttendeePhone" placeholder="Phone" style="flex:1">
+          <button class="btn btn-primary" onclick="addAttendee()">Add</button>
+        </div>
+      </div>
+      <table class="table">
+        <thead>
+          <tr><th>Name</th><th>Company</th><th>Crew</th><th>Role</th><th>Phone</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="attendeesTableBody">
+        </tbody>
+      </table>
+      <div id="attendeesEmpty" class="empty">No attendees yet. Add one above.</div>
+    </div>
+  </div>
+
+  <!-- Verification Codes Log -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Verification Codes (SMS Log)</h2>
+      <button class="btn btn-sm btn-danger" onclick="clearLog()">Clear</button>
+    </div>
+    <div class="section-body">
+      <div id="codeLog" class="log-panel">
+        <div class="empty" id="logEmpty">Codes will appear here when Unity requests verification...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
